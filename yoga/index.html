@@ -7,6 +7,12 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=Nunito+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Nunito Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             line-height: 1.7;
@@ -14,20 +20,12 @@
             background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
             scroll-behavior: smooth;
             overflow-x: hidden;
-            min-height: 100vh;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
-            position: relative;
         }
 
         /* Header */
@@ -90,11 +88,18 @@
             font-size: 28px;
             font-weight: 700;
             color: #2c3e50;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             transition: all 0.3s ease;
         }
 
         .logo:hover .logo-text {
-            color: #e74c3c;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .nav-links {
@@ -167,22 +172,17 @@
             z-index: 2;
         }
 
-        .hero-content {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 20px;
-            text-align: center;
-        }
-
         .hero-content h1 {
             font-family: 'Playfair Display', serif;
             font-size: 4rem;
             font-weight: 700;
             margin-bottom: 25px;
-            color: #ffffff;
-            text-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             animation: fadeInUp 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            line-height: 1.2;
         }
 
         .hero-content p {
@@ -199,8 +199,7 @@
             backdrop-filter: blur(20px);
             padding: 35px;
             border-radius: 20px;
-            margin: 35px auto;
-            max-width: 600px;
+            margin: 35px 0;
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             animation: fadeInUp 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s both;
@@ -884,15 +883,11 @@
             
             .hero-content h1 {
                 font-size: 2.5rem;
-                line-height: 1.3;
-                margin-bottom: 20px;
             }
 
             .hero-content p {
                 font-size: 1rem;
                 padding: 0 10px;
-                margin-bottom: 25px;
-                line-height: 1.6;
             }
 
             .opening-info {
@@ -964,14 +959,6 @@
         @media (max-width: 480px) {
             .hero-content h1 {
                 font-size: 2rem;
-                line-height: 1.3;
-                margin-bottom: 15px;
-            }
-
-            .hero-content p {
-                font-size: 0.95rem;
-                line-height: 1.5;
-                margin-bottom: 20px;
             }
 
             .logo-text {
@@ -985,22 +972,14 @@
 
             .hero {
                 padding-top: 80px;
-                min-height: 100vh;
-            }
-
-            .opening-info {
-                margin: 20px 10px;
-                padding: 25px 20px;
             }
 
             .opening-info h2 {
                 font-size: 1.3rem;
-                margin-bottom: 10px;
             }
 
             .opening-info .date-time {
                 font-size: 1.1rem;
-                margin-bottom: 8px;
             }
 
             .cta-button {
@@ -1838,53 +1817,27 @@
         `;
         document.head.appendChild(style);
 
-        // Add entrance animations on scroll with enhanced observer
+        // Add entrance animations on scroll
         const observerOptions = {
-            threshold: 0.15,
-            rootMargin: '0px 0px -80px 0px'
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
         };
 
         const observer = new IntersectionObserver(function(entries) {
-            entries.forEach((entry, index) => {
+            entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    setTimeout(() => {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0) scale(1)';
-                        entry.target.classList.add('animate');
-                    }, index * 100);
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
                 }
             });
         }, observerOptions);
 
-        // Observe elements for animation with enhanced effects
-        document.querySelectorAll('.class-card, .contact-item').forEach((el, index) => {
+        // Observe elements for animation
+        document.querySelectorAll('.class-card, .gallery-item, .contact-item').forEach(el => {
             el.style.opacity = '0';
-            el.style.transform = 'translateY(50px) scale(0.9)';
-            el.style.transition = 'all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            el.style.transitionDelay = `${index * 0.1}s`;
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
             observer.observe(el);
-        });
-
-        // Enhanced parallax effect for hero section (disabled to prevent text overlap)
-        // window.addEventListener('scroll', function() {
-        //     const scrolled = window.pageYOffset;
-        //     const hero = document.querySelector('.hero');
-        //     const parallax = scrolled * 0.5;
-        //     
-        //     if (hero) {
-        //         hero.style.transform = `translateY(${parallax}px)`;
-        //     }
-        // });
-
-        // Add interactive hover effects for navigation
-        document.querySelectorAll('.nav-links a').forEach(link => {
-            link.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-3px) scale(1.05)';
-            });
-            
-            link.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0) scale(1)';
-            });
         });
     </script>
 </body>
