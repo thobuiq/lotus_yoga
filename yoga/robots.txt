@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# Allow crawling of all image files
+Allow: /hinh_anh/
+Allow: /*.jpg
+Allow: /*.jpeg
+Allow: /*.png
+Allow: /*.gif
+Allow: /*.webp
+
+# Sitemap location
+Sitemap: https://lotusyoga.io.vn/sitemap.xml
+
+# Crawl-delay (optional)
+Crawl-delay: 1
