@@ -67,6 +67,8 @@
     
     <!-- AI Chat Configuration -->
     <script src="https://lotusyoga.io.vn/chat-config.js"></script>
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -2248,18 +2250,25 @@
             background: white;
             border-top: 1px solid #ecf0f1;
         ">
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." style="
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <textarea id="chat-input" placeholder="Nhập tin nhắn... (Shift+Enter để xuống hàng, Enter để gửi)" style="
                     flex: 1;
                     padding: 12px 15px;
                     border: 2px solid #ecf0f1;
-                    border-radius: 25px;
+                    border-radius: 20px;
                     font-size: 14px;
                     outline: none;
                     transition: border-color 0.3s ease;
+                    resize: none;
+                    min-height: 20px;
+                    max-height: 100px;
+                    overflow-y: auto;
+                    font-family: inherit;
+                    line-height: 1.4;
                 " onfocus="this.style.borderColor='#e74c3c'" 
                    onblur="this.style.borderColor='#ecf0f1'"
-                   onkeypress="if(event.key==='Enter') sendMessage()">
+                   onkeydown="handleKeyDown(event)"
+                   oninput="autoResize(this)"></textarea>
                 <button onclick="sendMessage()" style="
                     background: linear-gradient(135deg, #e74c3c, #c0392b);
                     border: none;
@@ -2273,6 +2282,7 @@
                     justify-content: center;
                     transition: all 0.3s ease;
                     box-shadow: 0 2px 10px rgba(231, 76, 60, 0.3);
+                    flex-shrink: 0;
                 " onmouseover="this.style.transform='scale(1.1)'" 
                    onmouseout="this.style.transform='scale(1)'">
                     <i class="fas fa-paper-plane" style="font-size: 14px;"></i>
@@ -2336,8 +2346,8 @@
                         },
                         class_type: {
                             type: "string",
-                            enum: ["yoga_bay", "yoga_san", "lyra", "private"],
-                            description: "Loại lớp học: yoga_bay (Aerial Yoga), yoga_san (Mat Yoga), lyra (Lyra), private (cá nhân)"
+                            enum: ["yoga_bay", "yoga_san", "lyra"],
+                            description: "Loại lớp học: yoga_bay (Yoga Bay/Dây), yoga_san (Yoga Thảm/Sàn), lyra (Lyra - chưa mở)"
                         },
                         schedule_preference: {
                             type: "string",
@@ -2440,10 +2450,21 @@ THÔNG TIN STUDIO:
 - Giờ hoạt động: T2-T7: 6:00-21:00, CN: 7:00-20:00
 
 CÁC LOẠI LỚP:
-- Yoga Bay (Aerial): Cho mọi trình độ, giúp giãn cột sống
-- Yoga Sàn (Mat): Hatha, Vinyasa, Yin Yoga
-- Lyra: Múa trên vòng, kết hợp yoga và acro
-- Private: Học riêng 1-1
+- Yoga Thảm (Sàn): Tập trên thảm, phù hợp mọi trình độ
+  + Buổi lẻ: 60k/buổi
+  + Gói tháng: 599k (12 buổi, HSD 1 tháng)
+  + Gói 3 tháng: 1.617k (giảm 10%)
+  
+- Yoga Bay (Dây): Tập trên dây lụa, giúp giãn cột sống
+  + Buổi lẻ: 200k/buổi
+  + Gói tháng: 1.199k (8 buổi, HSD 1 tháng)  
+  + Gói 3 tháng: 3.899k (30 buổi, HSD 3 tháng)
+  
+- Lyra: Hiện tại chưa mở lớp, sẽ thông báo sớm
+
+LỊCH TẬP:
+- Yoga Thảm: Sáng T2,4,6 (6h-7h, 7h30-8h30, 9h-10h), Chiều T2,4,6 (15h-16h), Tối T2,4,6,3,5,7 (18h-19h)
+- Yoga Bay: T7,CN (9h-10h), T3,5 (10h30-11h30), T2,4,6 (19h15-20h15)
 
 Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. Khi học viên có ý định đăng ký, hãy thu thập thông tin cần thiết và sử dụng function register_student để hoàn tất đăng ký.`
             }];
@@ -2478,6 +2499,56 @@ Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. 
         async function sendQuickMessage(message) {
             addMessage(message, 'user');
             await sendToGPT(message);
+        }
+        
+        // Handle textarea key events
+        function handleKeyDown(event) {
+            if (event.key === 'Enter') {
+                if (event.shiftKey) {
+                    // Shift+Enter: Allow new line
+                    return true;
+                } else {
+                    // Enter: Send message
+                    event.preventDefault();
+                    sendMessage();
+                    return false;
+                }
+            }
+        }
+        
+        // Auto resize textarea
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+        }
+        
+        // Render markdown text
+        function renderMarkdown(text) {
+            if (typeof marked !== 'undefined') {
+                try {
+                    // Configure marked options
+                    marked.setOptions({
+                        breaks: true,
+                        gfm: true,
+                        sanitize: false,
+                        smartLists: true,
+                        smartypants: true
+                    });
+                    
+                    return marked.parse(text);
+                } catch (error) {
+                    console.error('Markdown parsing error:', error);
+                    return text.replace(/\n/g, '<br>');
+                }
+            } else {
+                // Fallback: basic text formatting
+                return text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/`(.*?)`/g, '<code>$1</code>')
+                    .replace(/~~(.*?)~~/g, '<del>$1</del>')
+                    .replace(/\n/g, '<br>');
+            }
         }
         
         // Send Custom Message with AI
@@ -2671,27 +2742,31 @@ Studio sẽ liên hệ lại trong 24h để xác nhận lịch học. Cảm ơn
         function getClassSchedule(classType) {
             const schedules = {
                 yoga_bay: `📅 LỊCH HỌC YOGA BAY (AERIAL):
-• Thứ 2, 4, 6: 6:30-7:30, 18:30-19:30, 20:00-21:00
-• Thứ 3, 5, 7: 7:00-8:00, 19:00-20:00
-• Chủ nhật: 8:00-9:00, 16:00-17:00`,
+• Thứ 7, Chủ nhật: 9:00-10:00
+• Thứ 3, 5: 10:30-11:30
+• Thứ 2, 4, 6: 19:15-20:15`,
                 
-                yoga_san: `📅 LỊCH HỌC YOGA SÀN:
-• Hatha Yoga: T2,T4,T6 - 6:00-7:00, 17:30-18:30
-• Vinyasa Flow: T3,T5,T7 - 6:30-7:30, 18:00-19:00  
-• Yin Yoga: T7,CN - 19:30-20:30`,
+                yoga_san: `📅 LỊCH HỌC YOGA THẢM (SÀN):
+🌅 BUỔI SÁNG:
+• 6:00-7:00: T2, T4, T6
+• 7:30-8:30: T2, T4, T6 (đang chiêu sinh)
+• 9:00-10:00: T2, T4, T6 (đang chiêu sinh)
+
+🌆 BUỔI CHIỀU:
+• 15:00-16:00: T2, T4, T6
+• 18:00-19:00: T2, T4, T6, T3, T5, T7`,
                 
                 lyra: `📅 LỊCH HỌC LYRA:
-• Cơ bản: T3,T5 - 19:00-20:00
-• Nâng cao: T2,T6 - 20:00-21:00
-• Workshop cuối tuần: CN 14:00-16:00`,
+💫 Hiện tại chưa mở lớp Lyra
+📞 Vui lòng liên hệ để được thông báo khi có lớp mới`,
                 
                 all: `📅 TỔNG HỢP LỊCH HỌC TẤT CẢ LỚP:
 
-🪁 YOGA BAY: T2,4,6 (6:30-7:30, 18:30-19:30, 20:00-21:00), T3,5,7 (7:00-8:00, 19:00-20:00), CN (8:00-9:00, 16:00-17:00)
+🪁 YOGA BAY: T7,CN (9:00-10:00), T3,5 (10:30-11:30), T2,4,6 (19:15-20:15)
 
-🧘 YOGA SÀN: Hatha (T2,4,6: 6:00-7:00, 17:30-18:30), Vinyasa (T3,5,7: 6:30-7:30, 18:00-19:00), Yin (T7,CN: 19:30-20:30)
+🧘 YOGA THẢM: Sáng T2,4,6 (6:00-7:00, 7:30-8:30, 9:00-10:00), Chiều T2,4,6 (15:00-16:00), T2,4,6,3,5,7 (18:00-19:00)
 
-💫 LYRA: Cơ bản (T3,5: 19:00-20:00), Nâng cao (T2,6: 20:00-21:00), Workshop (CN: 14:00-16:00)`
+💫 LYRA: Chưa mở lớp - sẽ thông báo sớm`
             };
             
             return schedules[classType] || schedules.all;
@@ -2700,41 +2775,38 @@ Studio sẽ liên hệ lại trong 24h để xác nhận lịch học. Cảm ơn
         function getPricingInfo(packageType) {
             const pricing = {
                 single: `💰 GIÁ BUỔI LẺ:
-• Yoga Bay: 200.000 VNĐ/buổi
-• Yoga Sàn: 150.000 VNĐ/buổi  
-• Lyra: 250.000 VNĐ/buổi
-• Private: 500.000 VNĐ/buổi`,
+• Yoga Thảm (Sàn): 60.000 VNĐ/buổi
+• Yoga Bay (Dây): 200.000 VNĐ/buổi
+• Lyra: Chưa mở lớp`,
                 
-                monthly: `💰 GÓI THÁNG (12 buổi):
-• Yoga Bay: 2.000.000 VNĐ (Tiết kiệm 400k)
-• Yoga Sàn: 1.500.000 VNĐ (Tiết kiệm 300k)
-• Lyra: 2.500.000 VNĐ (Tiết kiệm 500k)`,
+                monthly: `💰 GÓI THÁNG:
+• Yoga Thảm: 599.000 VNĐ (12 buổi - hạn sử dụng 1 tháng)
+• Yoga Bay: 1.199.000 VNĐ (8 buổi - hạn sử dụng 1 tháng)`,
                 
-                quarterly: `💰 GÓI QUÝ (36 buổi):
-• Yoga Bay: 5.400.000 VNĐ (Tiết kiệm 1.8M)
-• Yoga Sàn: 4.050.000 VNĐ (Tiết kiệm 1.35M)
-• Lyra: 6.750.000 VNĐ (Tiết kiệm 2.25M)`,
+                quarterly: `💰 GÓI DÀI HẠN:
+• Yoga Thảm: 1.617.300 VNĐ (3 tháng - giảm 10%)
+• Yoga Bay: 3.899.000 VNĐ (30 buổi - hạn sử dụng 3 tháng)`,
                 
-                yearly: `💰 GÓI NĂM (144 buổi):
-• Yoga Bay: 19.200.000 VNĐ (Tiết kiệm 9.6M)
-• Yoga Sàn: 14.400.000 VNĐ (Tiết kiệm 7.2M)
-• Lyra: 24.000.000 VNĐ (Tiết kiệm 12M)`,
+                yearly: `💰 GÓI NĂM:
+• Hiện tại chưa có gói năm
+• Vui lòng liên hệ để được tư vấn gói dài hạn`,
                 
                 all: `💰 BẢNG GIÁ FULL:
 
 🎯 BUỔI LẺ:
-• Yoga Bay: 200k • Yoga Sàn: 150k • Lyra: 250k • Private: 500k
+• Yoga Thảm: 60k/buổi
+• Yoga Bay: 200k/buổi
+• Lyra: Chưa mở lớp
 
-📅 THÁNG (12 buổi):
-• Yoga Bay: 2M • Yoga Sàn: 1.5M • Lyra: 2.5M
+📅 GÓI THÁNG:
+• Yoga Thảm: 599k (12 buổi - HSD 1 tháng)
+• Yoga Bay: 1.199k (8 buổi - HSD 1 tháng)
 
-🎊 QUÝ (36 buổi):  
-• Yoga Bay: 5.4M • Yoga Sàn: 4.05M • Lyra: 6.75M
+🎊 GÓI DÀI HẠN:
+• Yoga Thảm 3 tháng: 1.617k (giảm 10%)
+• Yoga Bay 3 tháng: 3.899k (30 buổi)
 
-🎉 NĂM (144 buổi):
-• Yoga Bay: 19.2M • Yoga Sàn: 14.4M • Lyra: 24M
-
-🎁 KHUYẾN MÃI KHAI TRƯƠNG: Giảm 20% gói 3 tháng đầu!`
+🎁 ƯU ĐÃI: Đăng ký 3 tháng Yoga Thảm được giảm 10%!`
             };
             
             return pricing[packageType] || pricing.all;
@@ -2754,10 +2826,9 @@ ${params.date ? `Ngày ${params.date}: ` : ''}${params.time ? `Khung ${params.ti
         // Helper functions
         function getClassTypeName(type) {
             const names = {
-                yoga_bay: 'Yoga Bay (Aerial)',
-                yoga_san: 'Yoga Sàn',
-                lyra: 'Lyra',
-                private: 'Học riêng (Private)'
+                yoga_bay: 'Yoga Bay (Dây)',
+                yoga_san: 'Yoga Thảm (Sàn)',
+                lyra: 'Lyra (chưa mở)'
             };
             return names[type] || type;
         }
@@ -2818,6 +2889,8 @@ ${params.date ? `Ngày ${params.date}: ` : ''}${params.time ? `Khung ${params.ti
                     box-shadow: 0 2px 10px rgba(231, 76, 60, 0.3);
                     animation: slideInRight 0.3s ease;
                 `;
+                // For user messages, preserve line breaks but don't parse markdown
+                messageDiv.innerHTML = text.replace(/\n/g, '<br>');
             } else {
                 messageDiv.style.cssText = `
                     background: white;
@@ -2830,11 +2903,13 @@ ${params.date ? `Ngày ${params.date}: ` : ''}${params.time ? `Khung ${params.ti
                     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
                     border-left: 3px solid #e74c3c;
                     animation: slideInLeft 0.3s ease;
-                    white-space: pre-line;
+                    white-space: normal;
+                    line-height: 1.6;
                 `;
+                // For bot messages, parse markdown
+                messageDiv.innerHTML = renderMarkdown(text);
             }
             
-            messageDiv.innerHTML = text;
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
@@ -3002,6 +3077,155 @@ ${params.date ? `Ngày ${params.date}: ` : ''}${params.time ? `Khung ${params.ti
         }
         
         #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #c0392b;
+        }
+        
+        /* Markdown Styling in Chat Messages */
+        #chat-messages h1, #chat-messages h2, #chat-messages h3,
+        #chat-messages h4, #chat-messages h5, #chat-messages h6 {
+            margin: 10px 0 5px 0;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        #chat-messages h1 { font-size: 1.4em; }
+        #chat-messages h2 { font-size: 1.3em; }
+        #chat-messages h3 { font-size: 1.2em; }
+        #chat-messages h4 { font-size: 1.1em; }
+        #chat-messages h5 { font-size: 1.05em; }
+        #chat-messages h6 { font-size: 1em; }
+        
+        #chat-messages p {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        
+        #chat-messages strong {
+            font-weight: 600;
+            color: #e74c3c;
+        }
+        
+        #chat-messages em {
+            font-style: italic;
+            color: #8e44ad;
+        }
+        
+        #chat-messages code {
+            background: #f8f9fa;
+            color: #e74c3c;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            border: 1px solid #e9ecef;
+        }
+        
+        #chat-messages pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+        
+        #chat-messages pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: #2c3e50;
+        }
+        
+        #chat-messages blockquote {
+            border-left: 4px solid #e74c3c;
+            margin: 10px 0;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: #555;
+        }
+        
+        #chat-messages ul, #chat-messages ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        
+        #chat-messages li {
+            margin: 4px 0;
+            line-height: 1.5;
+        }
+        
+        #chat-messages a {
+            color: #e74c3c;
+            text-decoration: none;
+            border-bottom: 1px dotted #e74c3c;
+            transition: all 0.3s ease;
+        }
+        
+        #chat-messages a:hover {
+            color: #c0392b;
+            border-bottom-style: solid;
+        }
+        
+        #chat-messages table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        
+        #chat-messages th, #chat-messages td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        #chat-messages th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        #chat-messages tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        #chat-messages hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e74c3c, transparent);
+            margin: 15px 0;
+        }
+        
+        #chat-messages del {
+            color: #7f8c8d;
+            text-decoration: line-through;
+        }
+        
+        /* Auto-resize textarea styles */
+        #chat-input {
+            scrollbar-width: thin;
+            scrollbar-color: #e74c3c #f1f1f1;
+        }
+        
+        #chat-input::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        #chat-input::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 2px;
+        }
+        
+        #chat-input::-webkit-scrollbar-thumb {
+            background: #e74c3c;
+            border-radius: 2px;
+        }
+        
+        #chat-input::-webkit-scrollbar-thumb:hover {
             background: #c0392b;
         }
     </style>
