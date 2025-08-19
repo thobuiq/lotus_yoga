@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo AI Chat - Lotus Yoga Studio</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .demo-header h1 {
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+        
+        .demo-chat {
+            border: 2px solid #ecf0f1;
+            border-radius: 15px;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin: 10px 0;
+            padding: 12px 16px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .message.user {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            margin-left: auto;
+            border-radius: 15px 15px 5px 15px;
+        }
+        
+        .message.bot {
+            background: white;
+            color: #2c3e50;
+            border-left: 3px solid #e74c3c;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            white-space: pre-line;
+        }
+        
+        .chat-input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #ecf0f1;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+        }
+        
+        .chat-input:focus {
+            border-color: #e74c3c;
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+        
+        .quick-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .quick-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .demo-features {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .feature-card h3 {
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .typing-indicator {
+            font-style: italic;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>🤖 Demo AI Chat - Lotus Yoga Studio</h1>
+            <p>Trải nghiệm hệ thống chat AI thông minh với GPT-4o</p>
+        </div>
+        
+        <div class="demo-chat">
+            <div class="chat-header">
+                <img src="https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/logo.jpg" 
+                     style="width: 35px; height: 35px; border-radius: 50%; border: 2px solid white;">
+                <div>
+                    <h4 style="margin: 0; font-size: 16px;">Lotus AI Assistant</h4>
+                    <p style="margin: 0; font-size: 12px; opacity: 0.9;">Demo Mode - Tự động trả lời</p>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    🙏 <strong>Xin chào! Tôi là AI Assistant của Lotus Yoga Studio</strong>
+
+Tôi có thể giúp bạn:
+• 📋 Đăng ký khóa học yoga
+• 📅 Xem lịch học chi tiết  
+• 💰 Tư vấn gói học phù hợp
+• 🏢 Thông tin về studio
+
+Hãy thử các nút bên dưới hoặc gõ tin nhắn! 😊
+                </div>
+                
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="sendDemoMessage('Tôi muốn đăng ký lớp yoga')">📋 Đăng ký</button>
+                    <button class="quick-btn" onclick="sendDemoMessage('Cho tôi xem lịch học')">📅 Lịch học</button>
+                    <button class="quick-btn" onclick="sendDemoMessage('Bảng giá như thế nào?')">💰 Giá cả</button>
+                    <button class="quick-btn" onclick="sendDemoMessage('Studio ở đâu?')">📍 Địa chỉ</button>
+                    <button class="quick-btn" onclick="sendDemoMessage('Tôi mới bắt đầu tập yoga')">🌱 Người mới</button>
+                    <button class="quick-btn" onclick="sendDemoMessage('Yoga Bay khác Yoga Sàn thế nào?')">🤔 So sánh</button>
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." 
+                       onkeypress="if(event.key==='Enter') sendDemoMessage()">
+                <button class="send-btn" onclick="sendDemoMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="demo-features">
+            <div class="feature-card">
+                <h3>🧠 AI Thông Minh</h3>
+                <p>Sử dụng GPT-4o để hiểu ngữ cảnh và trả lời tự nhiên như con người</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🎯 Function Calling</h3>
+                <p>Tự động thu thập thông tin đăng ký và xử lý các tác vụ phức tạp</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>📱 Responsive</h3>
+                <p>Hoạt động mượt mà trên mọi thiết bị desktop, tablet, mobile</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🔄 Real-time</h3>
+                <p>Phản hồi tức thì với typing indicator và animation mượt mà</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const demoResponses = {
+            'đăng ký': `Tuyệt vời! Để đăng ký lớp yoga, tôi cần thu thập một số thông tin:
+
+📝 **Thông tin cần thiết:**
+• Họ tên đầy đủ
+• Số điện thoại  
+• Loại lớp muốn học
+• Trình độ hiện tại
+
+🧘‍♀️ **Các loại lớp:**
+• **Yoga Bay (Aerial)**: 200k/buổi - Tập trên dây lụa
+• **Yoga Sàn**: 150k/buổi - Hatha, Vinyasa, Yin
+• **Lyra**: 250k/buổi - Múa trên vòng tròn
+
+Bạn quan tâm đến loại nào? Cho tôi biết tên và số điện thoại nhé!`,
+
+            'lịch': `📅 **LỊCH HỌC CHI TIẾT:**
+
+🪁 **YOGA BAY (AERIAL):**
+• T2,4,6: 6:30-7:30, 18:30-19:30, 20:00-21:00
+• T3,5,7: 7:00-8:00, 19:00-20:00  
+• CN: 8:00-9:00, 16:00-17:00
+
+🧘 **YOGA SÀN:**
+• Hatha: T2,4,6 - 6:00-7:00, 17:30-18:30
+• Vinyasa: T3,5,7 - 6:30-7:30, 18:00-19:00
+• Yin: T7,CN - 19:30-20:30
+
+💫 **LYRA:**
+• Cơ bản: T3,5 - 19:00-20:00
+• Nâng cao: T2,6 - 20:00-21:00
+• Workshop: CN 14:00-16:00
+
+Bạn muốn đăng ký lớp nào?`,
+
+            'giá': `💰 **BẢNG GIÁ LOTUS YOGA STUDIO:**
+
+💎 **BUỔI LẺ:**
+• Yoga Bay: 200.000đ
+• Yoga Sàn: 150.000đ  
+• Lyra: 250.000đ
+• Private: 500.000đ
+
+📅 **GÓI THÁNG (12 buổi):**
+• Yoga Bay: 2.000.000đ (tiết kiệm 400k)
+• Yoga Sàn: 1.500.000đ (tiết kiệm 300k)
+• Lyra: 2.500.000đ (tiết kiệm 500k)
+
+🎊 **GÓI QUÝ (36 buổi):**
+• Yoga Bay: 5.400.000đ (tiết kiệm 1.8M)
+• Yoga Sàn: 4.050.000đ (tiết kiệm 1.35M)
+• Lyra: 6.750.000đ (tiết kiệm 2.25M)
+
+🎁 **KHUYẾN MÃI:** Giảm 20% gói 3 tháng đầu!
+
+Bạn quan tâm gói nào?`,
+
+            'địa chỉ': `📍 **THÔNG TIN STUDIO:**
+
+🏢 **Địa chỉ:** 43/12b Hậu Lân 1, Bà Điểm, Hóc Môn, TP.HCM
+
+📞 **Hotline:** 097 448 28 47
+
+🕒 **Giờ hoạt động:**
+• Thứ 2-7: 6:00 - 21:00
+• Chủ nhật: 7:00 - 20:00
+
+🚗 **Cách đến:**
+• Gần ngã tư Hậu Lân
+• Có chỗ đậu xe miễn phí
+• Dễ dàng di chuyển bằng xe máy/ôtô
+
+🗺️ Bạn có cần chỉ đường chi tiết không?`,
+
+            'mới': `🌱 **CHÀO MỪNG NGƯỜI MỚI BẮT ĐẦU!**
+
+Yoga rất phù hợp cho người mới! Đây là những gì bạn cần biết:
+
+✨ **LỜI KHUYÊN:**
+• Bắt đầu từ Yoga Sàn (dễ hơn)
+• 2-3 buổi/tuần là lý tưởng
+• Không cần dụng cụ ban đầu
+• Trang phục thoải mái, không quá rộng
+
+🎯 **LỢI ÍCH:**
+• Giảm stress, lo âu
+• Cải thiện sức khỏe tổng thể  
+• Tăng độ dẻo dai, sức mạnh
+• Cân bằng tâm lý
+
+👨‍🏫 **GIÁO VIÊN:**
+• Kinh nghiệm 5+ năm
+• Chứng chỉ quốc tế
+• Hướng dẫn tận tình
+
+Bạn muốn thử lớp nào trước?`,
+
+            'so sánh': `🤔 **SO SÁNH YOGA BAY vs YOGA SÀN:**
+
+🪁 **YOGA BAY (AERIAL):**
+✅ Tập trên dây lụa treo trên không
+✅ Giảm áp lực lên cột sống
+✅ Dễ làm tư thế khó
+✅ Thú vị, độc đáo
+❌ Cần thời gian quen dây lụa
+❌ Giá cao hơn một chút
+
+🧘 **YOGA SÀN:**
+✅ Yoga truyền thống, quen thuộc  
+✅ Nhiều phong cách (Hatha, Vinyasa...)
+✅ Giá phải chăng
+✅ Dễ tập tại nhà
+❌ Một số tư thế khó với người mới
+❌ Áp lực lên khớp
+
+🎯 **KHUYẾN NGHỊ:**
+• Người mới: Yoga Sàn → Yoga Bay
+• Có vấn đề cột sống: Yoga Bay
+• Thích thử thách: Lyra
+
+Bạn thiên về loại nào?`
+        };
+        
+        function sendDemoMessage(message) {
+            const input = document.getElementById('chatInput');
+            const text = message || input.value.trim();
+            
+            if (!text) return;
+            
+            // Add user message
+            addDemoMessage(text, 'user');
+            
+            if (input) {
+                input.value = '';
+            }
+            
+            // Show typing indicator
+            showTyping();
+            
+            // Auto reply after delay
+            setTimeout(() => {
+                hideTyping();
+                
+                let reply = 'Cảm ơn bạn đã liên hệ! Đây là demo mode. Trong phiên bản thực tế, AI sẽ phản hồi thông minh hơn với GPT-4o. 😊';
+                
+                // Find matching response
+                for (let keyword in demoResponses) {
+                    if (text.toLowerCase().includes(keyword)) {
+                        reply = demoResponses[keyword];
+                        break;
+                    }
+                }
+                
+                addDemoMessage(reply, 'bot');
+            }, 1500);
+        }
+        
+        function addDemoMessage(text, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = text;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        function showTyping() {
+            const indicator = document.createElement('div');
+            indicator.id = 'typing';
+            indicator.className = 'message bot typing-indicator';
+            indicator.innerHTML = '🤖 Đang suy nghĩ...';
+            
+            document.getElementById('chatMessages').appendChild(indicator);
+            document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+        }
+        
+        function hideTyping() {
+            const indicator = document.getElementById('typing');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+    </script>
+</body>
+</html>

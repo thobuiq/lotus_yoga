@@ -64,6 +64,9 @@
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"></noscript>
     <link rel="preload" href="https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/logo.jpg" as="image">
+    
+    <!-- AI Chat Configuration -->
+    <script src="https://lotusyoga.io.vn/chat-config.js"></script>
     <style>
         * {
             margin: 0;
@@ -2202,26 +2205,38 @@
                 border-left: 4px solid #e74c3c;
             ">
                 <p style="margin: 0; color: #2c3e50; line-height: 1.5;">
-                    <strong>Xin chào! 👋</strong><br>
-                    Chúng tôi là Lotus Yoga Studio. Chúng tôi có thể giúp gì cho bạn hôm nay?
+                    <strong>🙏 Xin chào! Tôi là AI Assistant của Lotus Yoga Studio</strong><br><br>
+                    Tôi có thể giúp bạn:
+                    <br>• 📋 Đăng ký khóa học yoga
+                    <br>• 📅 Xem lịch học chi tiết  
+                    <br>• 💰 Tư vấn gói học phù hợp
+                    <br>• 🏢 Thông tin về studio
+                    <br><br>
+                    Hãy cho tôi biết bạn quan tâm đến điều gì nhé! 😊
                 </p>
             </div>
             
             <!-- Quick Actions -->
             <div style="margin-top: 15px;">
-                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 10px; font-weight: 600;">Câu hỏi thường gặp:</p>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 10px; font-weight: 600;">🚀 Bắt đầu nhanh:</p>
                 <div class="quick-actions">
                     <button class="quick-action-btn" onclick="sendQuickMessage('Tôi muốn đăng ký lớp yoga')">
                         📋 Đăng ký lớp học
                     </button>
-                    <button class="quick-action-btn" onclick="sendQuickMessage('Lịch học yoga như thế nào?')">
-                        📅 Lịch học
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Cho tôi xem lịch học yoga')">
+                        📅 Xem lịch học
                     </button>
-                    <button class="quick-action-btn" onclick="sendQuickMessage('Giá cả của các lớp học?')">
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Bảng giá các gói học như thế nào?')">
                         💰 Bảng giá
                     </button>
-                    <button class="quick-action-btn" onclick="sendQuickMessage('Địa chỉ studio ở đâu?')">
-                        📍 Địa chỉ
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Studio ở địa chỉ nào?')">
+                        📍 Địa chỉ studio
+                    </button>
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Tôi chưa từng tập yoga, nên bắt đầu từ đâu?')">
+                        🌱 Người mới bắt đầu
+                    </button>
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Sự khác biệt giữa Yoga Bay và Yoga Sàn?')">
+                        🤔 So sánh các lớp
                     </button>
                 </div>
             </div>
@@ -2275,21 +2290,164 @@
     </div>
 
     <script>
-        // Ẩn fallback button sau khi Facebook chat load
+        // ChatGPT Integration Configuration
+        let OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY_HERE'; // Sẽ được override từ config
+        let WEBHOOK_URL = 'YOUR_WEBHOOK_URL_HERE'; // Sẽ được override từ config
+        
+        // Load configuration from external file
+        if (typeof CHAT_CONFIG !== 'undefined') {
+            OPENAI_API_KEY = CHAT_CONFIG.openai.apiKey;
+            WEBHOOK_URL = CHAT_CONFIG.webhook.url;
+        }
+        
+        // Conversation state
+        let conversationHistory = [];
+        let registrationData = {};
+        let isProcessingRequest = false;
+
+        // GPT-4o Functions for registration assistance
+        const availableFunctions = [
+            {
+                name: "register_student",
+                description: "Đăng ký học viên yoga mới với thông tin đầy đủ",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        name: {
+                            type: "string",
+                            description: "Họ tên đầy đủ của học viên"
+                        },
+                        phone: {
+                            type: "string", 
+                            description: "Số điện thoại liên hệ"
+                        },
+                        email: {
+                            type: "string",
+                            description: "Email của học viên"
+                        },
+                        age: {
+                            type: "number",
+                            description: "Tuổi của học viên"
+                        },
+                        experience: {
+                            type: "string",
+                            enum: ["beginner", "intermediate", "advanced"],
+                            description: "Trình độ yoga: beginner (mới bắt đầu), intermediate (trung cấp), advanced (nâng cao)"
+                        },
+                        class_type: {
+                            type: "string",
+                            enum: ["yoga_bay", "yoga_san", "lyra", "private"],
+                            description: "Loại lớp học: yoga_bay (Aerial Yoga), yoga_san (Mat Yoga), lyra (Lyra), private (cá nhân)"
+                        },
+                        schedule_preference: {
+                            type: "string",
+                            description: "Lịch học mong muốn (sáng/chiều/tối, thứ mấy)"
+                        },
+                        goals: {
+                            type: "string",
+                            description: "Mục tiêu tập yoga của học viên"
+                        },
+                        health_conditions: {
+                            type: "string",
+                            description: "Tình trạng sức khỏe đặc biệt (nếu có)"
+                        }
+                    },
+                    required: ["name", "phone", "class_type"]
+                }
+            },
+            {
+                name: "get_class_schedule",
+                description: "Lấy thông tin lịch học các lớp yoga",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        class_type: {
+                            type: "string",
+                            enum: ["yoga_bay", "yoga_san", "lyra", "all"],
+                            description: "Loại lớp muốn xem lịch"
+                        }
+                    }
+                }
+            },
+            {
+                name: "get_pricing_info",
+                description: "Lấy thông tin bảng giá các gói học",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        package_type: {
+                            type: "string",
+                            enum: ["single", "monthly", "quarterly", "yearly", "all"],
+                            description: "Loại gói: single (buổi lẻ), monthly (tháng), quarterly (quý), yearly (năm), all (tất cả)"
+                        }
+                    }
+                }
+            },
+            {
+                name: "check_availability",
+                description: "Kiểm tra chỗ trống của lớp học",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        class_type: {
+                            type: "string",
+                            description: "Loại lớp học"
+                        },
+                        date: {
+                            type: "string",
+                            description: "Ngày muốn học (định dạng YYYY-MM-DD)"
+                        },
+                        time: {
+                            type: "string",
+                            description: "Khung giờ muốn học"
+                        }
+                    },
+                    required: ["class_type"]
+                }
+            }
+        ];
+
+        // Initialize chat when page loads
         window.addEventListener('load', function() {
             setTimeout(function() {
                 const fbChat = document.querySelector('.fb-customerchat iframe');
                 const fallbackChat = document.getElementById('fallback-chat');
                 
                 if (fbChat && fbChat.offsetHeight > 0) {
-                    // Facebook chat đã load, ẩn fallback
                     fallbackChat.style.display = 'none';
                 } else {
-                    // Facebook chat chưa load, hiển thị fallback
-                    console.log('Facebook Chat chưa load, hiển thị fallback button');
+                    console.log('Facebook Chat chưa load, sử dụng AI Chat');
+                    initializeAIChat();
                 }
             }, 3000);
         });
+
+        // Initialize AI Chat
+        function initializeAIChat() {
+            conversationHistory = [{
+                role: "system",
+                content: `Bạn là trợ lý AI thông minh của Lotus Yoga Studio. Nhiệm vụ của bạn là:
+
+1. Tư vấn và hỗ trợ học viên đăng ký các khóa học yoga
+2. Cung cấp thông tin về lịch học, giá cả, địa chỉ studio
+3. Thu thập thông tin đăng ký một cách tự nhiên và thân thiện
+4. Sử dụng function calling để xử lý đăng ký khi có đủ thông tin
+
+THÔNG TIN STUDIO:
+- Tên: Lotus Yoga Studio  
+- Địa chỉ: 43/12b Hậu Lân 1, Bà Điểm, Hóc Môn, TP.HCM
+- Điện thoại: 097 448 28 47
+- Giờ hoạt động: T2-T7: 6:00-21:00, CN: 7:00-20:00
+
+CÁC LOẠI LỚP:
+- Yoga Bay (Aerial): Cho mọi trình độ, giúp giãn cột sống
+- Yoga Sàn (Mat): Hatha, Vinyasa, Yin Yoga
+- Lyra: Múa trên vòng, kết hợp yoga và acro
+- Private: Học riêng 1-1
+
+Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. Khi học viên có ý định đăng ký, hãy thu thập thông tin cần thiết và sử dụng function register_student để hoàn tất đăng ký.`
+            }];
+        }
         
         // Toggle Chat Popup
         function toggleChatPopup() {
@@ -2297,60 +2455,349 @@
             const isVisible = popup.style.display === 'flex';
             
             if (isVisible) {
-                // Ẩn popup
                 popup.style.transform = 'scale(0.8) translateY(20px)';
                 popup.style.opacity = '0';
                 setTimeout(() => {
                     popup.style.display = 'none';
                 }, 300);
             } else {
-                // Hiển thị popup
                 popup.style.display = 'flex';
                 setTimeout(() => {
                     popup.style.transform = 'scale(1) translateY(0)';
                     popup.style.opacity = '1';
                 }, 10);
+                
+                // Initialize AI chat if not already done
+                if (conversationHistory.length === 0) {
+                    initializeAIChat();
+                }
             }
         }
         
-        // Send Quick Message
-        function sendQuickMessage(message) {
-            const messagesContainer = document.getElementById('chat-messages');
-            
-            // Thêm tin nhắn của user
+        // Send Quick Message with AI
+        async function sendQuickMessage(message) {
             addMessage(message, 'user');
-            
-            // Tự động reply sau 1 giây
-            setTimeout(() => {
-                let reply = '';
-                if (message.includes('đăng ký')) {
-                    reply = 'Tuyệt vời! Bạn có thể đăng ký ngay tại website hoặc gọi cho chúng tôi. Bạn quan tâm đến lớp nào: Yoga Bay, Yoga Sàn, hay Lyra? 🧘‍♀️';
-                } else if (message.includes('lịch')) {
-                    reply = 'Lịch học của chúng tôi: Thứ 2-7: 6:00-21:00, Chủ nhật: 7:00-20:00. Bạn muốn biết lịch chi tiết của lớp nào? 📅';
-                } else if (message.includes('giá')) {
-                    reply = 'Hiện tại chúng tôi đang có ưu đãi khai trương đặc biệt! Vui lòng gọi 097 448 28 47 để biết bảng giá chi tiết nhé. 💝';
-                } else if (message.includes('địa chỉ')) {
-                    reply = 'Studio của chúng tôi tại: 43/12b Hậu Lân 1, Bà Điểm, Hóc Môn, TP.HCM. Bạn có cần chỉ đường không? 🗺️';
-                } else {
-                    reply = 'Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất có thể. Để được hỗ trợ nhanh hơn, vui lòng gọi 097 448 28 47. 😊';
-                }
-                addMessage(reply, 'bot');
-            }, 1000);
+            await sendToGPT(message);
         }
         
-        // Send Custom Message
-        function sendMessage() {
+        // Send Custom Message with AI
+        async function sendMessage() {
             const input = document.getElementById('chat-input');
             const message = input.value.trim();
             
-            if (message) {
+            if (message && !isProcessingRequest) {
                 addMessage(message, 'user');
                 input.value = '';
+                await sendToGPT(message);
+            }
+        }
+
+        // Send message to GPT-4o
+        async function sendToGPT(userMessage) {
+            if (isProcessingRequest) return;
+            
+            isProcessingRequest = true;
+            showTypingIndicator();
+
+            try {
+                // Add user message to history
+                conversationHistory.push({
+                    role: "user",
+                    content: userMessage
+                });
+
+                const response = await fetch('https://api.saas.platform.ai.vn/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o",
+                        messages: conversationHistory,
+                        functions: availableFunctions,
+                        function_call: "auto",
+                        temperature: 0.7,
+                        max_tokens: 1000,
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API Error Response:', errorText);
+                    throw new Error(`API Error: ${response.status} - ${errorText}`);
+                }
+
+                const responseText = await response.text();
+                console.log('Raw API Response:', responseText);
                 
-                // Auto reply
-                setTimeout(() => {
-                    addMessage('Cảm ơn bạn đã nhắn tin! Chúng tôi sẽ phản hồi trong thời gian sớm nhất. Để được hỗ trợ ngay lập tức, vui lòng gọi 097 448 28 47. 📞', 'bot');
-                }, 1000);
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('JSON Parse Error:', parseError);
+                    console.error('Response that failed to parse:', responseText);
+                    throw new Error('Invalid JSON response from API');
+                }
+                const assistantMessage = data.choices[0].message;
+
+                hideTypingIndicator();
+
+                // Check if function call is requested
+                if (assistantMessage.function_call) {
+                    await handleFunctionCall(assistantMessage.function_call);
+                }
+
+                // Add assistant response to history
+                conversationHistory.push(assistantMessage);
+
+                // Display assistant's response
+                if (assistantMessage.content) {
+                    addMessage(assistantMessage.content, 'bot');
+                }
+
+            } catch (error) {
+                hideTypingIndicator();
+                console.error('Error calling GPT API:', error);
+                
+                // Fallback response
+                addMessage('Xin lỗi, hiện tại hệ thống đang gặp sự cố. Vui lòng gọi trực tiếp 097 448 28 47 để được hỗ trợ. 📞', 'bot');
+            } finally {
+                isProcessingRequest = false;
+            }
+        }
+
+        // Handle Function Calls
+        async function handleFunctionCall(functionCall) {
+            const functionName = functionCall.name;
+            const functionArgs = JSON.parse(functionCall.arguments);
+
+            let functionResult = '';
+
+            switch (functionName) {
+                case 'register_student':
+                    functionResult = await registerStudent(functionArgs);
+                    break;
+                
+                case 'get_class_schedule':
+                    functionResult = getClassSchedule(functionArgs.class_type);
+                    break;
+                
+                case 'get_pricing_info':
+                    functionResult = getPricingInfo(functionArgs.package_type);
+                    break;
+                
+                case 'check_availability':
+                    functionResult = checkAvailability(functionArgs);
+                    break;
+                
+                default:
+                    functionResult = 'Function not found';
+            }
+
+            // Send function result back to GPT
+            conversationHistory.push({
+                role: "function",
+                name: functionName,
+                content: functionResult
+            });
+
+            // Get GPT's response to function result
+            try {
+                const response = await fetch('https://api.saas.platform.ai.vn/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o",
+                        messages: conversationHistory,
+                        temperature: 0.7,
+                        max_tokens: 1000
+                    })
+                });
+
+                const data = await response.json();
+                const finalResponse = data.choices[0].message;
+                
+                conversationHistory.push(finalResponse);
+                
+                if (finalResponse.content) {
+                    addMessage(finalResponse.content, 'bot');
+                }
+
+            } catch (error) {
+                console.error('Error in function follow-up:', error);
+            }
+        }
+
+        // Function Implementations
+        async function registerStudent(studentData) {
+            try {
+                // Save registration data
+                registrationData = studentData;
+                
+                // Send to webhook/backend
+                if (WEBHOOK_URL && WEBHOOK_URL !== 'YOUR_WEBHOOK_URL_HERE') {
+                    await fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            type: 'student_registration',
+                            data: studentData,
+                            timestamp: new Date().toISOString()
+                        })
+                    });
+                }
+
+                return `Đăng ký thành công cho học viên ${studentData.name}! Thông tin đã được ghi nhận:
+- Tên: ${studentData.name}
+- Điện thoại: ${studentData.phone}
+- Loại lớp: ${getClassTypeName(studentData.class_type)}
+- Trình độ: ${getExperienceName(studentData.experience || 'beginner')}
+
+Studio sẽ liên hệ lại trong 24h để xác nhận lịch học. Cảm ơn bạn đã tin tưởng Lotus Yoga Studio! 🙏`;
+                
+            } catch (error) {
+                console.error('Registration error:', error);
+                return 'Có lỗi xảy ra trong quá trình đăng ký. Vui lòng gọi 097 448 28 47 để được hỗ trợ trực tiếp.';
+            }
+        }
+
+        function getClassSchedule(classType) {
+            const schedules = {
+                yoga_bay: `📅 LỊCH HỌC YOGA BAY (AERIAL):
+• Thứ 2, 4, 6: 6:30-7:30, 18:30-19:30, 20:00-21:00
+• Thứ 3, 5, 7: 7:00-8:00, 19:00-20:00
+• Chủ nhật: 8:00-9:00, 16:00-17:00`,
+                
+                yoga_san: `📅 LỊCH HỌC YOGA SÀN:
+• Hatha Yoga: T2,T4,T6 - 6:00-7:00, 17:30-18:30
+• Vinyasa Flow: T3,T5,T7 - 6:30-7:30, 18:00-19:00  
+• Yin Yoga: T7,CN - 19:30-20:30`,
+                
+                lyra: `📅 LỊCH HỌC LYRA:
+• Cơ bản: T3,T5 - 19:00-20:00
+• Nâng cao: T2,T6 - 20:00-21:00
+• Workshop cuối tuần: CN 14:00-16:00`,
+                
+                all: `📅 TỔNG HỢP LỊCH HỌC TẤT CẢ LỚP:
+
+🪁 YOGA BAY: T2,4,6 (6:30-7:30, 18:30-19:30, 20:00-21:00), T3,5,7 (7:00-8:00, 19:00-20:00), CN (8:00-9:00, 16:00-17:00)
+
+🧘 YOGA SÀN: Hatha (T2,4,6: 6:00-7:00, 17:30-18:30), Vinyasa (T3,5,7: 6:30-7:30, 18:00-19:00), Yin (T7,CN: 19:30-20:30)
+
+💫 LYRA: Cơ bản (T3,5: 19:00-20:00), Nâng cao (T2,6: 20:00-21:00), Workshop (CN: 14:00-16:00)`
+            };
+            
+            return schedules[classType] || schedules.all;
+        }
+
+        function getPricingInfo(packageType) {
+            const pricing = {
+                single: `💰 GIÁ BUỔI LẺ:
+• Yoga Bay: 200.000 VNĐ/buổi
+• Yoga Sàn: 150.000 VNĐ/buổi  
+• Lyra: 250.000 VNĐ/buổi
+• Private: 500.000 VNĐ/buổi`,
+                
+                monthly: `💰 GÓI THÁNG (12 buổi):
+• Yoga Bay: 2.000.000 VNĐ (Tiết kiệm 400k)
+• Yoga Sàn: 1.500.000 VNĐ (Tiết kiệm 300k)
+• Lyra: 2.500.000 VNĐ (Tiết kiệm 500k)`,
+                
+                quarterly: `💰 GÓI QUÝ (36 buổi):
+• Yoga Bay: 5.400.000 VNĐ (Tiết kiệm 1.8M)
+• Yoga Sàn: 4.050.000 VNĐ (Tiết kiệm 1.35M)
+• Lyra: 6.750.000 VNĐ (Tiết kiệm 2.25M)`,
+                
+                yearly: `💰 GÓI NĂM (144 buổi):
+• Yoga Bay: 19.200.000 VNĐ (Tiết kiệm 9.6M)
+• Yoga Sàn: 14.400.000 VNĐ (Tiết kiệm 7.2M)
+• Lyra: 24.000.000 VNĐ (Tiết kiệm 12M)`,
+                
+                all: `💰 BẢNG GIÁ FULL:
+
+🎯 BUỔI LẺ:
+• Yoga Bay: 200k • Yoga Sàn: 150k • Lyra: 250k • Private: 500k
+
+📅 THÁNG (12 buổi):
+• Yoga Bay: 2M • Yoga Sàn: 1.5M • Lyra: 2.5M
+
+🎊 QUÝ (36 buổi):  
+• Yoga Bay: 5.4M • Yoga Sàn: 4.05M • Lyra: 6.75M
+
+🎉 NĂM (144 buổi):
+• Yoga Bay: 19.2M • Yoga Sàn: 14.4M • Lyra: 24M
+
+🎁 KHUYẾN MÃI KHAI TRƯƠNG: Giảm 20% gói 3 tháng đầu!`
+            };
+            
+            return pricing[packageType] || pricing.all;
+        }
+
+        function checkAvailability(params) {
+            // Mock availability check - replace with real API call
+            const classTypeName = getClassTypeName(params.class_type);
+            return `✅ Kiểm tra chỗ trống cho ${classTypeName}:
+
+Hiện tại còn chỗ trống cho hầu hết các khung giờ. 
+${params.date ? `Ngày ${params.date}: ` : ''}${params.time ? `Khung ${params.time} - ` : ''}Có thể đăng ký ngay!
+
+Để đảm bảo chỗ học, bạn có muốn đăng ký luôn không? 😊`;
+        }
+
+        // Helper functions
+        function getClassTypeName(type) {
+            const names = {
+                yoga_bay: 'Yoga Bay (Aerial)',
+                yoga_san: 'Yoga Sàn',
+                lyra: 'Lyra',
+                private: 'Học riêng (Private)'
+            };
+            return names[type] || type;
+        }
+
+        function getExperienceName(exp) {
+            const names = {
+                beginner: 'Mới bắt đầu',
+                intermediate: 'Trung cấp', 
+                advanced: 'Nâng cao'
+            };
+            return names[exp] || exp;
+        }
+
+        // UI Helper Functions
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.id = 'typing-indicator';
+            indicator.style.cssText = `
+                background: white;
+                color: #7f8c8d;
+                padding: 12px 16px;
+                border-radius: 15px 15px 15px 5px;
+                margin: 10px auto 10px 0;
+                max-width: 80%;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                border-left: 3px solid #e74c3c;
+                animation: slideInLeft 0.3s ease;
+                font-style: italic;
+            `;
+            indicator.innerHTML = '🤖 Đang suy nghĩ...';
+            
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.appendChild(indicator);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
             }
         }
         
@@ -2383,17 +2830,16 @@
                     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
                     border-left: 3px solid #e74c3c;
                     animation: slideInLeft 0.3s ease;
+                    white-space: pre-line;
                 `;
             }
             
             messageDiv.innerHTML = text;
             messagesContainer.appendChild(messageDiv);
-            
-            // Scroll to bottom
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
         
-        // Kiểm tra và reload Facebook chat nếu cần
+        // Initialize Facebook chat fallback
         setTimeout(function() {
             if (typeof FB !== 'undefined' && FB.XFBML) {
                 FB.XFBML.parse();
