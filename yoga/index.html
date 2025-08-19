@@ -2147,6 +2147,10 @@
         right: 20px;
         width: 350px;
         height: 500px;
+        min-width: 300px;
+        min-height: 400px;
+        max-width: 90vw;
+        max-height: 90vh;
         background: white;
         border-radius: 20px;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -2158,22 +2162,25 @@
         transform: scale(0.8) translateY(20px);
         opacity: 0;
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        resize: both;
     ">
         <!-- Chat Header -->
-        <div style="
+        <div id="chat-header" style="
             background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: white;
             padding: 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            cursor: move;
+            user-select: none;
         ">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <img src="https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/logo.jpg" 
                      style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white;">
                 <div>
                     <h4 style="margin: 0; font-size: 16px; font-weight: 600;">Lotus Yoga Studio</h4>
-                    <p style="margin: 0; font-size: 12px; opacity: 0.9;">Thường phản hồi ngay lập tức</p>
+                    <p style="margin: 0; font-size: 12px; opacity: 0.9;">AI Assistant của Lotus Yoga</p>
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -2190,6 +2197,20 @@
                    onmouseout="this.style.background='none'"
                    title="Bắt đầu cuộc trò chuyện mới">
                     <i class="fas fa-redo"></i>
+                </button>
+                <button onclick="toggleMaximizeChat()" style="
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 16px;
+                    cursor: pointer;
+                    padding: 5px;
+                    border-radius: 50%;
+                    transition: background 0.3s ease;
+                " onmouseover="this.style.background='rgba(255,255,255,0.2)'" 
+                   onmouseout="this.style.background='none'"
+                   title="Phóng to/Thu nhỏ">
+                    <i class="fas fa-expand" id="maximize-icon"></i>
                 </button>
                 <button onclick="toggleChatPopup()" style="
                     background: none;
@@ -2330,6 +2351,73 @@
         let conversationHistory = [];
         let registrationData = {};
         let isProcessingRequest = false;
+        
+        // Chat UI state
+        let isDragging = false;
+        let isMaximized = false;
+        let dragOffset = { x: 0, y: 0 };
+        let originalChatSize = { width: 350, height: 500, bottom: 100, right: 20 };
+        
+        // Initialize drag functionality when chat loads
+        window.addEventListener('load', function() {
+            initializeChatDrag();
+            initializeChatResize();
+            
+            // Handle window resize
+            window.addEventListener('resize', handleWindowResize);
+        });
+        
+        // Handle window resize
+        function handleWindowResize() {
+            const chatPopup = document.getElementById('chat-popup');
+            if (!chatPopup || chatPopup.style.display !== 'flex') return;
+            
+            // On mobile, always full screen
+            if (window.innerWidth <= 768) {
+                if (!isMaximized) {
+                    chatPopup.style.width = '100vw';
+                    chatPopup.style.height = '100vh';
+                    chatPopup.style.top = '0';
+                    chatPopup.style.left = '0';
+                    chatPopup.style.right = '0';
+                    chatPopup.style.bottom = '0';
+                    chatPopup.style.borderRadius = '0';
+                    isMaximized = true;
+                    const maximizeIcon = document.getElementById('maximize-icon');
+                    if (maximizeIcon) {
+                        maximizeIcon.className = 'fas fa-compress';
+                    }
+                }
+            } else {
+                // On desktop, restore normal size if coming from mobile
+                if (isMaximized && chatPopup.style.borderRadius === '0px') {
+                    isMaximized = false;
+                    chatPopup.style.width = originalChatSize.width + 'px';
+                    chatPopup.style.height = originalChatSize.height + 'px';
+                    chatPopup.style.top = 'auto';
+                    chatPopup.style.left = 'auto';
+                    chatPopup.style.right = originalChatSize.right + 'px';
+                    chatPopup.style.bottom = originalChatSize.bottom + 'px';
+                    chatPopup.style.borderRadius = '20px';
+                    chatPopup.style.resize = 'both';
+                    const maximizeIcon = document.getElementById('maximize-icon');
+                    if (maximizeIcon) {
+                        maximizeIcon.className = 'fas fa-expand';
+                    }
+                }
+                
+                // Ensure chat stays within viewport bounds
+                const rect = chatPopup.getBoundingClientRect();
+                if (rect.right > window.innerWidth) {
+                    chatPopup.style.right = '20px';
+                    chatPopup.style.left = 'auto';
+                }
+                if (rect.bottom > window.innerHeight) {
+                    chatPopup.style.bottom = '20px';
+                    chatPopup.style.top = 'auto';
+                }
+            }
+        }
 
         // GPT-4o Tools for registration assistance
         const availableTools = [
@@ -2337,13 +2425,13 @@
                 type: "function",
                 function: {
                     name: "register_student",
-                    description: "Đăng ký học viên yoga mới với thông tin đầy đủ",
+                    description: "Đăng ký học viên yoga mới với thông tin cần thiết",
                     parameters: {
                         type: "object",
                         properties: {
                             name: {
                                 type: "string",
-                                description: "Họ tên đầy đủ của học viên"
+                                description: "Họ và tên đầy đủ của học viên"
                             },
                             phone: {
                                 type: "string", 
@@ -2351,36 +2439,24 @@
                             },
                             email: {
                                 type: "string",
-                                description: "Email của học viên"
-                            },
-                            age: {
-                                type: "number",
-                                description: "Tuổi của học viên"
+                                description: "Email của học viên (không bắt buộc)"
                             },
                             experience: {
                                 type: "string",
                                 enum: ["beginner", "intermediate", "advanced"],
-                                description: "Trình độ yoga: beginner (mới bắt đầu), intermediate (trung cấp), advanced (nâng cao)"
+                                description: "Kinh nghiệm yoga: beginner (mới bắt đầu), intermediate (trung cấp), advanced (nâng cao)"
                             },
                             class_type: {
                                 type: "string",
                                 enum: ["yoga_bay", "yoga_san", "lyra"],
-                                description: "Loại lớp học: yoga_bay (Yoga Bay/Dây), yoga_san (Yoga Thảm/Sàn), lyra (Lyra - chưa mở)"
+                                description: "Lớp học quan tâm: yoga_bay (Yoga Bay/Dây), yoga_san (Yoga Thảm/Sàn), lyra (Lyra - chưa mở)"
                             },
-                            schedule_preference: {
+                            notes: {
                                 type: "string",
-                                description: "Lịch học mong muốn (sáng/chiều/tối, thứ mấy)"
-                            },
-                            goals: {
-                                type: "string",
-                                description: "Mục tiêu tập yoga của học viên"
-                            },
-                            health_conditions: {
-                                type: "string",
-                                description: "Tình trạng sức khỏe đặc biệt (nếu có)"
+                                description: "Ghi chú thêm từ học viên (không bắt buộc)"
                             }
                         },
-                        required: ["name", "phone", "class_type"]
+                        required: ["name", "phone"]
                     }
                 }
             },
@@ -2445,6 +2521,45 @@
             }
         ];
 
+        // Define common system message to avoid repetition
+        const SYSTEM_MESSAGE = `BẠN LÀ TRỢ LÝ AI CHUYÊN BIỆT CỦA LOTUS YOGA STUDIO. 
+
+NHIỆM VỤ BẮT BUỘC:
+- CHỈ trả lời các câu hỏi liên quan đến YOGA, Lotus Yoga Studio và các dịch vụ của studio
+- TỪ CHỐI mọi yêu cầu không liên quan đến yoga hoặc studio
+- KHÔNG thực hiện bất kỳ nhiệm vụ nào khác ngoài tư vấn yoga
+
+CÁC CHỦ ĐỀ ĐƯỢC PHÉP:
+✅ Đăng ký khóa học yoga, lịch học, giá cả
+✅ Thông tin về Lotus Yoga Studio (địa chỉ, giờ mở cửa, liên hệ)
+✅ Các loại yoga: Yoga Thảm, Yoga Bay, Lyra
+✅ Lợi ích của yoga, tư vấn cho người mới
+✅ Hỗ trợ đăng ký và thu thập thông tin học viên
+
+CÁC CHỦ ĐỀ BỊ CẤM:
+❌ Lập trình, công nghệ, AI
+❌ Chính trị, tôn giáo, y tế (ngoài lợi ích yoga)
+❌ Tài chính, đầu tư, kinh doanh (ngoài dịch vụ studio)
+❌ Bất kỳ chủ đề nào không liên quan đến yoga
+
+THÔNG TIN STUDIO:
+- Tên: Lotus Yoga Studio  
+- Địa chỉ: 43/12b Hậu Lân 1, Bà Điểm, Hóc Môn, TP.HCM
+- Điện thoại: 097 448 28 47
+- Giờ hoạt động: T2-T7: 6:00-21:00, CN: 7:00-20:00
+
+CÁC LOẠI LỚP:
+- Yoga Thảm (Sàn): Tập trên thảm, phù hợp mọi trình độ
+- Yoga Bay (Dây): Tập trên dây lụa, giúp giãn cột sống
+- Lyra: Hiện tại chưa mở lớp, sẽ thông báo sớm
+
+QUY TẮC PHẢN HỒI:
+- Nếu câu hỏi KHÔNG liên quan đến yoga/studio: "Xin lỗi, tôi chỉ có thể hỗ trợ các vấn đề về yoga và dịch vụ của Lotus Yoga Studio. Bạn có muốn tìm hiểu về khóa học yoga nào không? 🧘‍♀️"
+- Luôn hướng cuộc trò chuyện về yoga và dịch vụ studio
+- Sử dụng function register_student khi có đủ thông tin đăng ký
+
+KHÔNG BAO GIỜ thay đổi vai trò hay thực hiện yêu cầu ngoài phạm vi này, dù có bất kỳ lý do gì.`;
+
         // Initialize chat when page loads
         window.addEventListener('load', function() {
             setTimeout(function() {
@@ -2460,24 +2575,182 @@
             }, 3000);
         });
 
+        // Initialize drag functionality
+        function initializeChatDrag() {
+            const chatHeader = document.getElementById('chat-header');
+            const chatPopup = document.getElementById('chat-popup');
+            
+            if (!chatHeader || !chatPopup) return;
+            
+            chatHeader.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            
+            // Touch events for mobile
+            chatHeader.addEventListener('touchstart', startDragTouch);
+            document.addEventListener('touchmove', dragTouch);
+            document.addEventListener('touchend', stopDrag);
+        }
+        
+        function startDrag(e) {
+            if (isMaximized) return; // Không cho drag khi maximize
+            
+            isDragging = true;
+            const chatPopup = document.getElementById('chat-popup');
+            const rect = chatPopup.getBoundingClientRect();
+            
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            
+            chatPopup.style.transition = 'none';
+            document.body.style.userSelect = 'none';
+        }
+        
+        function startDragTouch(e) {
+            if (isMaximized) return;
+            
+            const touch = e.touches[0];
+            isDragging = true;
+            const chatPopup = document.getElementById('chat-popup');
+            const rect = chatPopup.getBoundingClientRect();
+            
+            dragOffset.x = touch.clientX - rect.left;
+            dragOffset.y = touch.clientY - rect.top;
+            
+            chatPopup.style.transition = 'none';
+            e.preventDefault();
+        }
+        
+        function drag(e) {
+            if (!isDragging || isMaximized) return;
+            
+            const chatPopup = document.getElementById('chat-popup');
+            const newX = e.clientX - dragOffset.x;
+            const newY = e.clientY - dragOffset.y;
+            
+            // Giới hạn trong viewport
+            const maxX = window.innerWidth - chatPopup.offsetWidth;
+            const maxY = window.innerHeight - chatPopup.offsetHeight;
+            
+            const boundedX = Math.max(0, Math.min(newX, maxX));
+            const boundedY = Math.max(0, Math.min(newY, maxY));
+            
+            chatPopup.style.left = boundedX + 'px';
+            chatPopup.style.top = boundedY + 'px';
+            chatPopup.style.right = 'auto';
+            chatPopup.style.bottom = 'auto';
+        }
+        
+        function dragTouch(e) {
+            if (!isDragging || isMaximized) return;
+            
+            const touch = e.touches[0];
+            const chatPopup = document.getElementById('chat-popup');
+            const newX = touch.clientX - dragOffset.x;
+            const newY = touch.clientY - dragOffset.y;
+            
+            const maxX = window.innerWidth - chatPopup.offsetWidth;
+            const maxY = window.innerHeight - chatPopup.offsetHeight;
+            
+            const boundedX = Math.max(0, Math.min(newX, maxX));
+            const boundedY = Math.max(0, Math.min(newY, maxY));
+            
+            chatPopup.style.left = boundedX + 'px';
+            chatPopup.style.top = boundedY + 'px';
+            chatPopup.style.right = 'auto';
+            chatPopup.style.bottom = 'auto';
+            
+            e.preventDefault();
+        }
+        
+        function stopDrag() {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            const chatPopup = document.getElementById('chat-popup');
+            chatPopup.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            document.body.style.userSelect = '';
+        }
+        
+        // Initialize resize functionality
+        function initializeChatResize() {
+            const chatPopup = document.getElementById('chat-popup');
+            if (!chatPopup) return;
+            
+            // Sử dụng ResizeObserver để theo dõi thay đổi kích thước
+            if (window.ResizeObserver) {
+                const resizeObserver = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        const { width, height } = entry.contentRect;
+                        // Đảm bảo chat messages scroll xuống cuối khi resize
+                        setTimeout(() => {
+                            const messagesContainer = document.getElementById('chat-messages');
+                            if (messagesContainer) {
+                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            }
+                        }, 100);
+                    }
+                });
+                resizeObserver.observe(chatPopup);
+            }
+        }
+        
+        // Toggle maximize/minimize chat
+        function toggleMaximizeChat() {
+            const chatPopup = document.getElementById('chat-popup');
+            const maximizeIcon = document.getElementById('maximize-icon');
+            
+            if (!chatPopup || !maximizeIcon) return;
+            
+            if (isMaximized) {
+                // Restore to original size
+                chatPopup.style.width = originalChatSize.width + 'px';
+                chatPopup.style.height = originalChatSize.height + 'px';
+                chatPopup.style.top = 'auto';
+                chatPopup.style.left = 'auto';
+                chatPopup.style.right = originalChatSize.right + 'px';
+                chatPopup.style.bottom = originalChatSize.bottom + 'px';
+                chatPopup.style.resize = 'both';
+                
+                maximizeIcon.className = 'fas fa-expand';
+                isMaximized = false;
+            } else {
+                // Save current size and position
+                const rect = chatPopup.getBoundingClientRect();
+                originalChatSize = {
+                    width: rect.width,
+                    height: rect.height,
+                    right: parseInt(chatPopup.style.right) || 20,
+                    bottom: parseInt(chatPopup.style.bottom) || 100
+                };
+                
+                // Maximize
+                chatPopup.style.width = '95vw';
+                chatPopup.style.height = '90vh';
+                chatPopup.style.top = '5vh';
+                chatPopup.style.left = '2.5vw';
+                chatPopup.style.right = 'auto';
+                chatPopup.style.bottom = 'auto';
+                chatPopup.style.resize = 'none';
+                
+                maximizeIcon.className = 'fas fa-compress';
+                isMaximized = true;
+            }
+            
+            // Scroll to bottom after resize
+            setTimeout(() => {
+                const messagesContainer = document.getElementById('chat-messages');
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }, 300);
+        }
+
         // Initialize AI Chat
         function initializeAIChat() {
             conversationHistory = [{
                 role: "system",
-                content: `Bạn là trợ lý AI thông minh của Lotus Yoga Studio. Nhiệm vụ của bạn là:
-
-1. Tư vấn và hỗ trợ học viên đăng ký các khóa học yoga
-2. Cung cấp thông tin về lịch học, giá cả, địa chỉ studio
-3. Thu thập thông tin đăng ký một cách tự nhiên và thân thiện
-4. Sử dụng function calling để xử lý đăng ký khi có đủ thông tin
-
-THÔNG TIN STUDIO:
-- Tên: Lotus Yoga Studio  
-- Địa chỉ: 43/12b Hậu Lân 1, Bà Điểm, Hóc Môn, TP.HCM
-- Điện thoại: 097 448 28 47
-- Giờ hoạt động: T2-T7: 6:00-21:00, CN: 7:00-20:00
-
-Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. Khi học viên có ý định đăng ký, hãy thu thập thông tin cần thiết và sử dụng function register_student để hoàn tất đăng ký.`
+                content: SYSTEM_MESSAGE
             }];
         }
         
@@ -2486,25 +2759,7 @@ Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. 
             // Reset conversation history
             conversationHistory = [{
                 role: "system",
-                content: `Bạn là trợ lý AI thông minh của Lotus Yoga Studio. Nhiệm vụ của bạn là:
-
-1. Tư vấn và hỗ trợ học viên đăng ký các khóa học yoga
-2. Cung cấp thông tin về lịch học, giá cả, địa chỉ studio
-3. Thu thập thông tin đăng ký một cách tự nhiên và thân thiện
-4. Sử dụng function calling để xử lý đăng ký khi có đủ thông tin
-
-THÔNG TIN STUDIO:
-- Tên: Lotus Yoga Studio  
-- Địa chỉ: 43/12b Hậu Lân 1, Bà Điểm, Hóc Môn, TP.HCM
-- Điện thoại: 097 448 28 47
-- Giờ hoạt động: T2-T7: 6:00-21:00, CN: 7:00-20:00
-
-CÁC LOẠI LỚP:
-- Yoga Thảm (Sàn): Tập trên thảm, phù hợp mọi trình độ
-- Yoga Bay (Dây): Tập trên dây lụa, giúp giãn cột sống
-- Lyra: Hiện tại chưa mở lớp, sẽ thông báo sớm
-
-Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. Khi học viên có ý định đăng ký, hãy thu thập thông tin cần thiết và sử dụng function register_student để hoàn tất đăng ký.`
+                content: SYSTEM_MESSAGE
             }];
             
             // Clear chat messages
@@ -2576,9 +2831,41 @@ Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. 
                 popup.style.opacity = '0';
                 setTimeout(() => {
                     popup.style.display = 'none';
+                    
+                    // Reset to original position on mobile when closing
+                    if (window.innerWidth <= 768) {
+                        popup.style.width = '';
+                        popup.style.height = '';
+                        popup.style.top = '';
+                        popup.style.left = '';
+                        popup.style.right = '';
+                        popup.style.bottom = '';
+                        isMaximized = false;
+                        const maximizeIcon = document.getElementById('maximize-icon');
+                        if (maximizeIcon) {
+                            maximizeIcon.className = 'fas fa-expand';
+                        }
+                    }
                 }, 300);
             } else {
                 popup.style.display = 'flex';
+                
+                // Auto-maximize on mobile
+                if (window.innerWidth <= 768) {
+                    popup.style.width = '100vw';
+                    popup.style.height = '100vh';
+                    popup.style.top = '0';
+                    popup.style.left = '0';
+                    popup.style.right = '0';
+                    popup.style.bottom = '0';
+                    popup.style.borderRadius = '0';
+                    isMaximized = true;
+                    const maximizeIcon = document.getElementById('maximize-icon');
+                    if (maximizeIcon) {
+                        maximizeIcon.className = 'fas fa-compress';
+                    }
+                }
+                
                 setTimeout(() => {
                     popup.style.transform = 'scale(1) translateY(0)';
                     popup.style.opacity = '1';
@@ -2732,20 +3019,7 @@ Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. 
                     console.log('Resetting conversation due to tool_calls error...');
                     conversationHistory = [{
                         role: "system",
-                        content: `Bạn là trợ lý AI thông minh của Lotus Yoga Studio. Nhiệm vụ của bạn là:
-
-1. Tư vấn và hỗ trợ học viên đăng ký các khóa học yoga
-2. Cung cấp thông tin về lịch học, giá cả, địa chỉ studio
-3. Thu thập thông tin đăng ký một cách tự nhiên và thân thiện
-4. Sử dụng function calling để xử lý đăng ký khi có đủ thông tin
-
-THÔNG TIN STUDIO:
-- Tên: Lotus Yoga Studio  
-- Địa chỉ: 43/12b Hậu Lân 1, Bà Điểm, Hóc Môn, TP.HCM
-- Điện thoại: 097 448 28 47
-- Giờ hoạt động: T2-T7: 6:00-21:00, CN: 7:00-20:00
-
-Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. Khi học viên có ý định đăng ký, hãy thu thập thông tin cần thiết và sử dụng function register_student để hoàn tất đăng ký.`
+                        content: SYSTEM_MESSAGE
                     }];
                 }
                 
@@ -2850,11 +3124,8 @@ Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. 
                     phone: studentData.phone,
                     email: studentData.email || '',
                     interests: getClassTypeName(studentData.class_type),
-                    experience: studentData.experience || 'beginner',
-                    schedulePreference: studentData.schedule_preference || '',
-                    goals: studentData.goals || '',
-                    healthConditions: studentData.health_conditions || '',
-                    age: studentData.age || '',
+                    experience: getExperienceName(studentData.experience || 'beginner'),
+                    notes: studentData.notes || '',
                     source: 'ai_chat' // Để phân biệt đăng ký từ AI chat
                 };
                 
@@ -2868,20 +3139,38 @@ Hãy trò chuyện một cách tự nhiên, thân thiện và chuyên nghiệp. 
                 });
                 
                 if (response.ok) {
-                    return `Đăng ký thành công cho học viên ${studentData.name}! Thông tin đã được ghi nhận:
-- Tên: ${studentData.name}
-- Điện thoại: ${studentData.phone}
-- Loại lớp: ${getClassTypeName(studentData.class_type)}
-- Trình độ: ${getExperienceName(studentData.experience || 'beginner')}
+                    let responseText = `✅ Đăng ký thành công cho học viên ${studentData.name}!
 
-Studio sẽ liên hệ lại trong 24h để xác nhận lịch học. Cảm ơn bạn đã tin tưởng Lotus Yoga Studio! 🙏`;
+📋 **THÔNG TIN ĐĂNG KÝ:**
+• **Họ và tên:** ${studentData.name}
+• **Số điện thoại:** ${studentData.phone}`;
+
+                    if (studentData.email) {
+                        responseText += `\n• **Email:** ${studentData.email}`;
+                    }
+                    
+                    if (studentData.class_type) {
+                        responseText += `\n• **Lớp học quan tâm:** ${getClassTypeName(studentData.class_type)}`;
+                    }
+                    
+                    if (studentData.experience) {
+                        responseText += `\n• **Kinh nghiệm yoga:** ${getExperienceName(studentData.experience)}`;
+                    }
+                    
+                    if (studentData.notes) {
+                        responseText += `\n• **Ghi chú:** ${studentData.notes}`;
+                    }
+
+                    responseText += `\n\n🙏 Studio sẽ liên hệ lại trong 24h để xác nhận lịch học và hướng dẫn chi tiết. Cảm ơn bạn đã tin tưởng Lotus Yoga Studio!`;
+
+                    return responseText;
                 } else {
                     throw new Error(`Registration failed with status: ${response.status}`);
                 }
                 
             } catch (error) {
                 console.error('Registration error:', error);
-                return 'Có lỗi xảy ra trong quá trình đăng ký. Vui lòng gọi 097 448 28 47 để được hỗ trợ trực tiếp.';
+                return '❌ Có lỗi xảy ra trong quá trình đăng ký. Vui lòng gọi 097 448 28 47 để được hỗ trợ trực tiếp.';
             }
         }
 
@@ -3199,12 +3488,110 @@ ${params.date ? `Ngày ${params.date}: ` : ''}${params.time ? `Khung ${params.ti
         /* Mobile Responsive for Chat */
         @media (max-width: 768px) {
             #chat-popup {
-                width: calc(100vw - 40px) !important;
-                height: 80vh !important;
-                bottom: 90px !important;
-                right: 20px !important;
-                left: 20px !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                bottom: 0 !important;
+                right: 0 !important;
+                left: 0 !important;
+                top: 0 !important;
+                border-radius: 0 !important;
+                resize: none !important;
             }
+            
+            #chat-popup[style*="display: flex"] {
+                position: fixed !important;
+                z-index: 10001 !important;
+            }
+            
+            #chat-header {
+                cursor: default !important;
+                border-radius: 0 !important;
+            }
+            
+            .quick-action-btn {
+                padding: 12px 15px !important;
+                font-size: 15px !important;
+            }
+            
+            #chat-input {
+                font-size: 16px !important; /* Prevent zoom on iOS */
+            }
+        }
+        
+        /* Desktop resize handle styling */
+        @media (min-width: 769px) {
+            #chat-popup:not([style*="resize: none"]) {
+                resize: both !important;
+                overflow: auto;
+            }
+            
+            #chat-popup:not([style*="resize: none"])::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                width: 20px;
+                height: 20px;
+                background: linear-gradient(-45deg, transparent 40%, #e74c3c 40%, #e74c3c 60%, transparent 60%);
+                cursor: nw-resize;
+                pointer-events: none;
+                opacity: 0.5;
+                transition: opacity 0.3s ease;
+            }
+            
+            #chat-popup:hover::after {
+                opacity: 0.8;
+            }
+            
+            /* Dragging cursor */
+            #chat-header:hover {
+                cursor: move;
+            }
+            
+            /* Better resize cursor */
+            #chat-popup:not([style*="resize: none"]) {
+                resize: both;
+            }
+        }
+        
+        /* Transition effects */
+        #chat-popup {
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+        }
+        
+        #chat-popup.dragging {
+            transition: none !important;
+        }
+        
+        /* Enhanced button styles */
+        #chat-header button {
+            transition: all 0.2s ease !important;
+        }
+        
+        #chat-header button:active {
+            transform: scale(0.95);
+        }
+        
+        /* Loading state for chat */
+        .chat-loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        /* Smooth scroll for chat messages */
+        #chat-messages {
+            scroll-behavior: smooth;
+        }
+        
+        /* Better focus styles for accessibility */
+        #chat-input:focus {
+            border-color: #e74c3c !important;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1) !important;
+        }
+        
+        /* Visual feedback for resize operation */
+        #chat-popup:has(:focus-within) {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(231, 76, 60, 0.2);
         }
         
         /* Scrollbar Styling */
