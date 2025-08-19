@@ -416,22 +416,203 @@
             }
         }
 
+        /* Mobile Menu */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #333;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-nav.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .mobile-nav-links {
+            list-style: none;
+            text-align: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        .mobile-nav-links li {
+            margin: 20px 0;
+        }
+
+        .mobile-nav-links a {
+            text-decoration: none;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .mobile-nav-links a:hover {
+            color: #ccc;
+        }
+
+        .mobile-nav-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .nav-links {
                 display: none;
             }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .mobile-nav {
+                display: flex;
+            }
+            
+            .hero {
+                padding-top: 90px; /* Add padding to account for fixed header */
+            }
             
             .hero-content h1 {
                 font-size: 2.5rem;
             }
+
+            .hero-content p {
+                font-size: 1rem;
+                padding: 0 10px;
+            }
+
+            .opening-info {
+                margin: 20px 10px;
+                padding: 20px;
+            }
+
+            .opening-info h2 {
+                font-size: 1.5rem;
+            }
+
+            .opening-info .date-time {
+                font-size: 1.2rem;
+            }
             
             .classes-grid {
                 grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .class-card {
+                margin: 0 10px;
             }
             
             .gallery-grid {
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+
+            .contact-info {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .registration-form {
+                margin: 0 10px;
+                padding: 30px 20px;
+            }
+
+            .modal {
+                width: 95%;
+                margin: 10px;
+                padding: 30px 20px;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+
+            .modal-btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .container {
+                padding: 0 15px;
+            }
+
+            .section-title h2 {
+                font-size: 2rem;
+            }
+
+            .section-title p {
+                font-size: 1rem;
+                padding: 0 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+
+            .logo-text {
+                font-size: 24px;
+            }
+
+            .logo img {
+                width: 50px;
+                height: 50px;
+            }
+
+            .hero {
+                padding-top: 80px;
+            }
+
+            .opening-info h2 {
+                font-size: 1.3rem;
+            }
+
+            .opening-info .date-time {
+                font-size: 1.1rem;
+            }
+
+            .cta-button {
+                padding: 12px 25px;
+                font-size: 14px;
+            }
+
+            .gallery-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .gallery-item {
+                height: 250px;
             }
         }
 
@@ -651,8 +832,27 @@
                 <li><a href="#register">Đăng ký</a></li>
                 <li><a href="#contact">Liên hệ</a></li>
             </ul>
+            
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
         </nav>
     </header>
+
+    <!-- Mobile Navigation -->
+    <div class="mobile-nav" id="mobileNav">
+        <button class="mobile-nav-close" id="mobileNavClose">
+            <i class="fas fa-times"></i>
+        </button>
+        <ul class="mobile-nav-links">
+            <li><a href="#home">Trang chủ</a></li>
+            <li><a href="#classes">Lớp học</a></li>
+            <li><a href="#gallery">Hình ảnh</a></li>
+            <li><a href="#register">Đăng ký</a></li>
+            <li><a href="#contact">Liên hệ</a></li>
+        </ul>
+    </div>
 
     <!-- Hero Section -->
     <section id="home" class="hero">
@@ -884,6 +1084,38 @@
     </footer>
 
     <script>
+        // Mobile menu functionality
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const mobileNavClose = document.getElementById('mobileNavClose');
+        const mobileNavLinks = document.querySelectorAll('.mobile-nav-links a');
+
+        mobileMenuToggle.addEventListener('click', function() {
+            mobileNav.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        mobileNavClose.addEventListener('click', function() {
+            mobileNav.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+
+        // Close mobile nav when clicking on a link
+        mobileNavLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                mobileNav.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        });
+
+        // Close mobile nav when clicking outside
+        mobileNav.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
         // Smooth scrolling for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
