@@ -1286,6 +1286,100 @@
                 box-shadow: inset 0px 0px 0px 30px #4caf50;
             }
         }
+
+        /* Lightbox Modal for Gallery */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .lightbox.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            transform: scale(0.7);
+            transition: transform 0.3s ease;
+        }
+
+        .lightbox.active .lightbox-content {
+            transform: scale(1);
+        }
+
+        .lightbox-image {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .lightbox-close:hover {
+            background: rgba(231, 76, 60, 0.8);
+            transform: scale(1.1);
+        }
+
+        /* New Studio Gallery Animation */
+        #new-studio-gallery .gallery-item {
+            animation: fadeInUp 0.6s ease forwards;
+            opacity: 0;
+            transform: translateY(30px);
+            box-shadow: 0 15px 35px rgba(218, 165, 32, 0.15);
+        }
+
+        #new-studio-gallery .gallery-item::before {
+            background: linear-gradient(135deg, rgba(218, 165, 32, 0.6), rgba(255, 215, 0, 0.4));
+        }
+
+        #new-studio-gallery .gallery-item:hover {
+            transform: scale(1.08) rotate(1deg);
+            box-shadow: 0 25px 50px rgba(218, 165, 32, 0.25);
+        }
+
+        #new-studio-gallery .gallery-item:nth-child(1) { animation-delay: 0.1s; }
+        #new-studio-gallery .gallery-item:nth-child(2) { animation-delay: 0.2s; }
+        #new-studio-gallery .gallery-item:nth-child(3) { animation-delay: 0.3s; }
+        #new-studio-gallery .gallery-item:nth-child(4) { animation-delay: 0.4s; }
+        #new-studio-gallery .gallery-item:nth-child(5) { animation-delay: 0.5s; }
+        #new-studio-gallery .gallery-item:nth-child(6) { animation-delay: 0.6s; }
+        #new-studio-gallery .gallery-item:nth-child(7) { animation-delay: 0.7s; }
+        #new-studio-gallery .gallery-item:nth-child(8) { animation-delay: 0.8s; }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -1300,6 +1394,7 @@
                 <li><a href="#home">Trang chủ</a></li>
                 <li><a href="#classes">Lớp học</a></li>
                 <li><a href="#gallery">Hình ảnh</a></li>
+                <li><a href="#new-studio-gallery">Phòng tập mới</a></li>
                 <li><a href="#register">Đăng ký</a></li>
                 <li><a href="#contact">Liên hệ</a></li>
             </ul>
@@ -1320,6 +1415,7 @@
             <li><a href="#home">Trang chủ</a></li>
             <li><a href="#classes">Lớp học</a></li>
             <li><a href="#gallery">Hình ảnh</a></li>
+            <li><a href="#new-studio-gallery">Phòng tập mới</a></li>
             <li><a href="#register">Đăng ký</a></li>
             <li><a href="#contact">Liên hệ</a></li>
         </ul>
@@ -1425,6 +1521,28 @@
                 <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh/526010713_1197999869021079_8123659415887515323_n.jpg')"></div>
                 <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh/528858585_1202948271859572_5302631891636370880_n.jpg')"></div>
                 <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh/529140391_1202948248526241_3973503017041062315_n.jpg')"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- New Studio Gallery Section -->
+    <section id="new-studio-gallery" class="gallery" style="background: linear-gradient(135deg, #f8f5f0 0%, #fff8f0 50%, #f5f2e8 100%); position: relative;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 20% 80%, rgba(218, 165, 32, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 215, 0, 0.08) 0%, transparent 50%); pointer-events: none;"></div>
+        <div class="container" style="position: relative; z-index: 1;">
+            <div class="section-title">
+                <h2 style="color: #2c3e50;">Phòng Tập Mới</h2>
+                <p style="color: #5d6d7e;">Khám phá không gian phòng tập mới hiện đại và tiện nghi</p>
+            </div>
+            
+            <div class="gallery-grid">
+                <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317908986_b24d6ee36747c3d5f111e2761617d704.jpg')" data-title="Không gian phòng tập mới 1"></div>
+                <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317913181_7dd698944b9891ea58cd082842098180.jpg')" data-title="Không gian phòng tập mới 2"></div>
+                <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317917721_b93e73cfbabece82db246788d0d76644.jpg')" data-title="Không gian phòng tập mới 3"></div>
+                <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317931238_32b052c52904d9747e8b1c9dfa0bcee7.jpg')" data-title="Không gian phòng tập mới 4"></div>
+                <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317936562_7d9b5c07eab1cbf16f64695055b6b57a.jpg')" data-title="Không gian phòng tập mới 5"></div>
+                <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317939214_a35b13b14d582386086ca5f8dd080836.jpg')" data-title="Không gian phòng tập mới 6"></div>
+                <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317944918_03823db77f70070c630c6969bb1ea390.jpg')" data-title="Không gian phòng tập mới 7"></div>
+                <div class="gallery-item" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317946749_e38467e20ea3be6d2eff462550fc8beb.jpg')" data-title="Không gian phòng tập mới 8"></div>
             </div>
         </div>
     </section>
@@ -3708,5 +3826,78 @@ ${params.date ? `Ngày ${params.date}: ` : ''}${params.time ? `Khung ${params.ti
             background: #c0392b;
         }
     </style>
+
+    <!-- Lightbox Modal -->
+    <div class="lightbox" id="lightbox">
+        <div class="lightbox-content">
+            <button class="lightbox-close" id="lightboxClose">&times;</button>
+            <img class="lightbox-image" id="lightboxImage" src="" alt="Gallery Image">
+            <div class="lightbox-title" id="lightboxTitle" style="color: white; text-align: center; margin-top: 15px; font-size: 1.2rem; font-weight: 500;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Lightbox functionality
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImage = document.getElementById('lightboxImage');
+        const lightboxTitle = document.getElementById('lightboxTitle');
+        const lightboxClose = document.getElementById('lightboxClose');
+        const galleryItems = document.querySelectorAll('.gallery-item');
+
+        // Add click event to all gallery items
+        galleryItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const bgImage = item.style.backgroundImage;
+                const imageUrl = bgImage.slice(5, -2); // Remove url(" and ")
+                const title = item.getAttribute('data-title') || 'Hình ảnh gallery';
+                lightboxImage.src = imageUrl;
+                lightboxImage.alt = title;
+                lightboxTitle.textContent = title;
+                lightbox.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+
+        // Close lightbox
+        lightboxClose.addEventListener('click', closeLightbox);
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        function closeLightbox() {
+            lightbox.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close lightbox with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        });
+
+        // Add scroll animation for new studio gallery
+        const newStudioObserverOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const newStudioObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                }
+            });
+        }, newStudioObserverOptions);
+
+        // Observe new studio gallery items
+        const newStudioItems = document.querySelectorAll('#new-studio-gallery .gallery-item');
+        newStudioItems.forEach(item => {
+            item.style.animationPlayState = 'paused';
+            newStudioObserver.observe(item);
+        });
+    </script>
 </body>
 </html>
