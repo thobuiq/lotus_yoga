@@ -93,15 +93,12 @@
 
         /* Header */
         header {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
             box-shadow: none;
             position: fixed;
             width: 100%;
             top: 0;
             z-index: 1000;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         header.scrolled {
@@ -231,10 +228,6 @@
 
         /* Hero Section */
         .hero {
-            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3)), url('https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
             height: 100vh;
             display: flex;
             align-items: center;
@@ -244,6 +237,54 @@
             overflow: hidden;
         }
 
+        .hero-slideshow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .hero-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+            transform: scale(1.05);
+            animation: slowZoom 20s ease-in-out infinite alternate;
+        }
+
+        .hero-slide.active {
+            opacity: 1;
+        }
+
+        @keyframes slowZoom {
+            0% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1.1);
+            }
+        }
+
+        .hero-slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
+            z-index: 1;
+        }
+
         .hero::before {
             content: '';
             position: absolute;
@@ -251,13 +292,13 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(ellipse at center, rgba(231, 76, 60, 0.1) 0%, rgba(0, 0, 0, 0.3) 100%);
-            z-index: 1;
+            background: radial-gradient(ellipse at center, rgba(231, 76, 60, 0.1) 0%, rgba(0, 0, 0, 0.2) 100%);
+            z-index: 2;
         }
 
         .hero .container {
             position: relative;
-            z-index: 2;
+            z-index: 3;
         }
 
         .hero-content h1 {
@@ -1460,6 +1501,14 @@
 
     <!-- Hero Section -->
     <section id="home" class="hero">
+        <div class="hero-slideshow">
+            <div class="hero-slide" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317944918_03823db77f70070c630c6969bb1ea390.jpg')"></div>
+            <div class="hero-slide active" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317913181_7dd698944b9891ea58cd082842098180.jpg')"></div>
+            <div class="hero-slide" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317917721_b93e73cfbabece82db246788d0d76644.jpg')"></div>
+            <div class="hero-slide" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317931238_32b052c52904d9747e8b1c9dfa0bcee7.jpg')"></div>
+            <div class="hero-slide" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317936562_7d9b5c07eab1cbf16f64695055b6b57a.jpg')"></div>
+            <div class="hero-slide" style="background-image: url('https://cdn.statically.io/gh/thobuiq/lotus_yoga/master/yoga/hinh_anh_phong_moi/z6944317939214_a35b13b14d582386086ca5f8dd080836.jpg')"></div>
+        </div>
         <div class="container">
             <div class="hero-content">
                 <h1>Lotus Aerial Yoga</h1>
@@ -1756,6 +1805,25 @@
     </footer>
 
     <script>
+        // Hero slideshow functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const slides = document.querySelectorAll('.hero-slide');
+            let currentSlide = 0;
+            
+            function showSlide(n) {
+                slides.forEach(slide => slide.classList.remove('active'));
+                slides[n].classList.add('active');
+            }
+            
+            function nextSlide() {
+                currentSlide = (currentSlide + 1) % slides.length;
+                showSlide(currentSlide);
+            }
+            
+            // Change slide every 4 seconds
+            setInterval(nextSlide, 4000);
+        });
+
         // Mobile menu functionality
         const mobileMenuToggle = document.getElementById('mobileMenuToggle');
         const mobileNav = document.getElementById('mobileNav');
